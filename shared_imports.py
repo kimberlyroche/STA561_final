@@ -6,6 +6,9 @@ warnings.simplefilter(action='ignore', category=UserWarning)
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
+tf.logging.set_verbosity(tf.logging.ERROR)
+
+import time
 
 import numpy as np
 import pandas as pd
@@ -44,7 +47,7 @@ from sklearn import decomposition
 round_tol = 6
 
 # =======================================================================================================
-# 	SHARED FUNTIONS
+#     SHARED FUNTIONS
 # =======================================================================================================
 
 # sources for CNN design:
@@ -53,24 +56,24 @@ round_tol = 6
 
 # loads and preprocesses data from lab 1
 def load_lab1_data(subsample_no = 0):
-	data = pd.read_csv("data/Advertisement.csv", header=None, skiprows=1, \
-		names=["ID", "TV", "radio", "newspaper", "sales"])
-	no_samples = data.shape[0]
+    data = pd.read_csv("data/Advertisement.csv", header=None, skiprows=1, \
+        names=["ID", "TV", "radio", "newspaper", "sales"])
+    no_samples = data.shape[0]
 
-	X = data[['TV', 'radio', 'newspaper']]
-	y = data[['sales']]
+    X = data[['TV', 'radio', 'newspaper']]
+    y = data[['sales']]
 
-	if subsample_no > 0:
-		X = X[0:subsample_no]
-		y = y[0:subsample_no]
+    if subsample_no > 0:
+        X = X[0:subsample_no]
+        y = y[0:subsample_no]
 
-	# various internet sources suggest best performance when standardizing data for input
-	# into neural networks, so we'll do that ahead of time (and for GP regression too)
-	min_max_scaler = preprocessing.MinMaxScaler()
-	X = min_max_scaler.fit_transform(X)
-	y = min_max_scaler.fit_transform(y)
+    # various internet sources suggest best performance when standardizing data for input
+    # into neural networks, so we'll do that ahead of time (and for GP regression too)
+    min_max_scaler = preprocessing.MinMaxScaler()
+    X = min_max_scaler.fit_transform(X)
+    y = min_max_scaler.fit_transform(y)
 
-	return (X, y)
+    return (X, y)
 
 # dead-simple convolutional architecture for the simple 3 x 1 regression problem
 def regression_model():
@@ -88,17 +91,18 @@ def regression_model():
 # X_test: (1, no_features)
 # y_test: (1, dim_outcome)
 
-def predict_GP(X_train, y_train, X_test):
+def predict_GP(X_train, y_train, X_test, return_sigma=False):
     # lots of possible choices for kernel here!
-    # e.g. noisy linear: kernel = DotProduct() + WhiteKernel()
-    # a noisy RBF seems pretty common
     kernel = RBF() + WhiteKernel()
+    #kernel = DotProduct() + WhiteKernel()
     gpr = GaussianProcessRegressor(kernel=kernel).fit(X_train, y_train)
-    return gpr.predict(X_test)
+    if return_sigma:
+        return gpr.predict(X_test, return_std=True)
+    else:
+        return gpr.predict(X_test)
 
-def predict_CNN_regression(X_train, y_train, X_test, batch_size=10):
+def predict_CNN_regression(X_train, y_train, X_test, batch_size=10, epochs=10):
     n = X_train.shape[0] # may varying if subsetting for debugging
-    cnn = KerasRegressor(build_fn=regression_model, epochs=1, batch_size=batch_size, verbose=0)
+    cnn = KerasRegressor(build_fn=regression_model, epochs=epochs, batch_size=batch_size, verbose=0)
     cnn.fit(x=X_train.reshape(n, 3, 1, 1), y=y_train.reshape(n, 1))
     return cnn.predict(X_test.reshape(1, 3, 1, 1))
-
