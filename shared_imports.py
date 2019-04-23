@@ -91,11 +91,6 @@ def random_subsampled_indices(full_index_no, subsample_no):
 def load_mnist(subsample_no=0):
     (X_train, y_train), (X_test, y_test) = mnist.load_data()
 
-    print(X_train.shape)
-    print(y_train.shape)
-    print(X_test.shape)
-    print(y_test.shape)
-
     # this normalization seems necessary or traditional for (grayscale) images
     X_train = X_train.astype('float32') / 255
     X_test = X_test.astype('float32') / 255
@@ -147,9 +142,9 @@ def predict_GP(X_train, y_train, X_test, return_sigma=False):
     else:
         return gpr.predict(X_test)
 
-def predict_CNN_regression(X_train, y_train, X_test, batch_size=10, epochs=10):
+def predict_CNN_regression(X_train, y_train, X_test, batch_size=10, epochs=10, verbose=0):
     n = X_train.shape[0] # may varying if subsetting for debugging
-    cnn = KerasRegressor(build_fn=regression_model, epochs=epochs, batch_size=batch_size, verbose=0)
+    cnn = KerasRegressor(build_fn=regression_model, epochs=epochs, batch_size=batch_size, verbose=verbose)
     cnn.fit(x=X_train.reshape(n, 3, 1, 1), y=y_train.reshape(n, 1))
     return cnn.predict(X_test.reshape(1, 3, 1, 1))
 
@@ -168,7 +163,7 @@ def measure(X, sim_dist_method="cosine"):
     if sim_dist_method == "Euclidean":
         csim = euclidean_distances(X)
     elif sim_dist_method == "KNN":
-        nbrs = NearestNeighbors(n_neighbors=5, algorithm='ball_tree').fit(X)
+        nbrs = NearestNeighbors(n_neighbors=10, algorithm='ball_tree').fit(X)
         csim = nbrs.kneighbors_graph(X).toarray()
     else:
         csim = cosine_similarity(X)
@@ -209,8 +204,52 @@ def embed_and_correlate(X, n_components, csim_hd, embed_method="PCA", sim_dist_m
         corr_measure = np.corrcoef(csim_hd_vec, csim_ld_vec)[0,1]
     return (X_transformed, mean_measure, std_measure, corr_measure)
 
+# heavily borrowing architecture from: https://keras.io/examples/variational_autoencoder/
+# network parameters
+def vae_embed(X_train, X_test, latent_dim=3, epochs=10, verbose=1):
+    # we'll only use this with MNIST; hard-code the dimensions
+    original_dim = 28*28
+    input_shape = (original_dim, )
+    intermediate_dim = 12*12 # pretty arbitrary
 
+    # encoder; simple - no convolution, just dense layers
+    inputs = Input(shape=input_shape, name='encoder_input')
+    x = Dense(intermediate_dim, activation='relu')(inputs)
+    z_mean = Dense(latent_dim, name='z_mean')(x)
+    z_log_var = Dense(latent_dim, name='z_log_var')(x)
 
+    # define a sample vector from the latent distribution
+    # this will be the input into the decoder!
+    z = Lambda(sampling, output_shape=(latent_dim,), name='z')([z_mean, z_log_var])
+
+    encoder = Model(inputs, [z_mean, z_log_var, z], name='encoder')
+
+    # decoder
+    latent_inputs = Input(shape=(latent_dim,), name='z_sampling')
+    x = Dense(intermediate_dim, activation='relu')(latent_inputs)
+    outputs = Dense(original_dim, activation='sigmoid')(x)
+
+    decoder = Model(latent_inputs, outputs, name='decoder')
+
+    # instantiate VAE model
+    outputs = decoder(encoder(inputs)[2])
+    vae = Model(inputs, outputs, name='vae_mlp')
+    models = (encoder, decoder)
+
+    reconstruction_loss = mse(inputs, outputs)
+
+    reconstruction_loss *= original_dim
+    kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
+    kl_loss = K.sum(kl_loss, axis=-1)
+    kl_loss *= -0.5
+    vae_loss = K.mean(reconstruction_loss + kl_loss)
+    vae.add_loss(vae_loss)
+    vae.compile(optimizer='adam')
+
+    vae.fit(X_train, epochs=epochs, batch_size=128, validation_data=(X_test, None), verbose=verbose)
+    
+    # just return the fitted /encoder/, since all we want to do is predict
+    return encoder
 
 
 
