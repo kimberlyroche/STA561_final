@@ -13,7 +13,7 @@ epochs = 10
 (X, y) = load_lab1_data(subsample_no=subsample_no)
 
 no_samples = X.shape[0]
-'''
+
 SSE_GP = 0.0 # sum of squared errors (GP)
 SSE_CNN = 0.0 # sum of squared errors (CNN)
 time_GP = 0.0 # total runtime (GP)
@@ -48,7 +48,7 @@ print("Average runtime (GP): " + str(round(time_GP/no_samples, round_tol)) + " s
 
 print("RMSE (CNN): " + str(round(np.sqrt(SSE_CNN/no_samples), round_tol)))
 print("Average runtime (CNN): " + str(round(time_CNN/no_samples, round_tol)) + " sec")
-'''
+
 # problem 1 part 2 - predictve (posterior) samples
 
 omissions = [0, 49, 99, 149] # sample indices 1, 50, 100, 150

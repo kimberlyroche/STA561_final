@@ -75,6 +75,41 @@ def load_lab1_data(subsample_no = 0):
 
     return (X, y)
 
+# returns a random sample of indices from the full set
+def random_subsampled_indices(full_index_no, subsample_no):
+    index_list = list(range(0, full_index_no))
+    random.shuffle(index_list)
+    index_list = index_list[0:subsample_no]
+    return index_list
+
+# loads and preprocesses MNIST data
+def load_mnist(subsample_no=0):
+    (X_train, y_train), (X_test, y_test) = mnist.load_data()
+
+    # this normalization seems necessary or traditional for (grayscale) images
+    X_train = X_train.astype('float32') / 255
+    X_test = X_test.astype('float32') / 255
+
+    # vectorize the pixels of the input images
+    # this takes X_train from (?, 28, 28) to (?, 784)
+    X_train = X_train.reshape(X_train.shape[0], X_train.shape[1]*X_train.shape[2])
+    X_test = X_test.reshape(X_test.shape[0], X_test.shape[1]*X_test.shape[2])
+
+    if subsample_no > 0:
+        index_list = random_subsampled_indices(X_train.shape[0], subsample_no)
+        X_train = X_train[index_list]
+        y_train = y_train[index_list]
+        # this assumes subsample_no >= min(X_train.shape[0], X_test.shape[0])
+        index_list = random_subsampled_indices(X_test.shape[0], subsample_no)
+        X_test = X_test[index_list]
+        y_test = y_test[index_list]
+
+    # center the data; this seems appropriate for cosine angle, probably doesn't
+    # hurt for other measure
+    colMeans = X_train.mean(axis=0)
+    X_train = X_train - colMeans
+    return X_train, y_train, X_test, y_test
+
 # dead-simple convolutional architecture for the simple 3 x 1 regression problem
 def regression_model():
     input_img = Input(shape=(3, 1, 1))
@@ -93,8 +128,9 @@ def regression_model():
 
 def predict_GP(X_train, y_train, X_test, return_sigma=False):
     # lots of possible choices for kernel here!
-    kernel = RBF() + WhiteKernel()
-    #kernel = DotProduct() + WhiteKernel()
+    # e.g. kernel = RBF() + WhiteKernel()
+    # seems to work better in this case with a linear kernel?
+    kernel = DotProduct() + WhiteKernel()
     gpr = GaussianProcessRegressor(kernel=kernel).fit(X_train, y_train)
     if return_sigma:
         return gpr.predict(X_test, return_std=True)
@@ -106,3 +142,30 @@ def predict_CNN_regression(X_train, y_train, X_test, batch_size=10, epochs=10):
     cnn = KerasRegressor(build_fn=regression_model, epochs=epochs, batch_size=batch_size, verbose=0)
     cnn.fit(x=X_train.reshape(n, 3, 1, 1), y=y_train.reshape(n, 1))
     return cnn.predict(X_test.reshape(1, 3, 1, 1))
+
+# returns a vector of the upper triangular components of a cosine similarity matrix
+def measure(X, sim_dist_method="cosine"):
+    csim = None
+    if sim_dist_method == "Euclidean":
+        csim = euclidean_distances(X)
+    else:
+        csim = cosine_similarity(X)
+    csim_vec = list()
+    no_samples = X.shape[0]
+    for i in range(no_samples):
+        for j in range((i+1), no_samples):
+            csim_vec.append(csim[i,j])
+    return csim_vec
+
+# perform an embedding of X and get the vector of (off-diagonal) pairwise distances
+def embed_and_measure(X, n_components, embed_method="PCA", sim_dist_method="cosine"):
+    X_transformed = None
+    if embed_method == "Laplacian eigenmaps":
+        embedding = SpectralEmbedding(n_components=n_components)
+        X_transformed = embedding.fit_transform(X)
+    else:
+        pca = decomposition.PCA(n_components=n_components)
+        pca.fit(X)
+        X_transformed = pca.transform(X)
+    csim_ld_vec = measure(X_transformed, sim_dist_method=sim_dist_method)    
+    return (X_transformed, csim_ld_vec)
