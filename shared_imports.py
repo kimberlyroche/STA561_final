@@ -43,6 +43,7 @@ from keras.datasets import mnist, cifar100, fashion_mnist
 from sklearn.manifold import SpectralEmbedding
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances, manhattan_distances, rbf_kernel
 from sklearn import decomposition
+from sklearn.neighbors import NearestNeighbors
 
 round_tol = 6
 
@@ -83,8 +84,17 @@ def random_subsampled_indices(full_index_no, subsample_no):
     return index_list
 
 # loads and preprocesses MNIST data
+# X_train is (60000 x 28 x 28)
+# X_test is (10000 x 28 x 28)
+# y_train is (60000 x 1)
+# x_train is (10000 x 1)
 def load_mnist(subsample_no=0):
     (X_train, y_train), (X_test, y_test) = mnist.load_data()
+
+    print(X_train.shape)
+    print(y_train.shape)
+    print(X_test.shape)
+    print(y_test.shape)
 
     # this normalization seems necessary or traditional for (grayscale) images
     X_train = X_train.astype('float32') / 255
@@ -143,22 +153,29 @@ def predict_CNN_regression(X_train, y_train, X_test, batch_size=10, epochs=10):
     cnn.fit(x=X_train.reshape(n, 3, 1, 1), y=y_train.reshape(n, 1))
     return cnn.predict(X_test.reshape(1, 3, 1, 1))
 
-# returns a vector of the upper triangular components of a cosine similarity matrix
-def measure(X, sim_dist_method="cosine"):
-    csim = None
-    if sim_dist_method == "Euclidean":
-        csim = euclidean_distances(X)
-    else:
-        csim = cosine_similarity(X)
+# takes a similarity or distance matrix and returns the vector of upper triangular measurements
+def vectorize_measure(csim):
     csim_vec = list()
-    no_samples = X.shape[0]
+    no_samples = csim.shape[0]
     for i in range(no_samples):
         for j in range((i+1), no_samples):
             csim_vec.append(csim[i,j])
     return csim_vec
 
-# perform an embedding of X and get the vector of (off-diagonal) pairwise distances
-def embed_and_measure(X, n_components, embed_method="PCA", sim_dist_method="cosine"):
+# wrapper
+def measure(X, sim_dist_method="cosine"):
+    csim = None
+    if sim_dist_method == "Euclidean":
+        csim = euclidean_distances(X)
+    elif sim_dist_method == "KNN":
+        nbrs = NearestNeighbors(n_neighbors=5, algorithm='ball_tree').fit(X)
+        csim = nbrs.kneighbors_graph(X).toarray()
+    else:
+        csim = cosine_similarity(X)
+    return csim
+
+# perform an embedding of X
+def embed(X, n_components, embed_method="PCA"):
     X_transformed = None
     if embed_method == "Laplacian eigenmaps":
         embedding = SpectralEmbedding(n_components=n_components)
@@ -167,5 +184,48 @@ def embed_and_measure(X, n_components, embed_method="PCA", sim_dist_method="cosi
         pca = decomposition.PCA(n_components=n_components)
         pca.fit(X)
         X_transformed = pca.transform(X)
-    csim_ld_vec = measure(X_transformed, sim_dist_method=sim_dist_method)    
-    return (X_transformed, csim_ld_vec)
+    return X_transformed
+
+# wrapper to embed and get the vector of (off-diagonal) pairwise distances
+# here csim_hd is the similarity or distance matrix over the same samples in the HD space
+def embed_and_correlate(X, n_components, csim_hd, embed_method="PCA", sim_dist_method="cosine"):
+    X_transformed = embed(X, n_components, embed_method=embed_method)
+    csim_ld_vec = None
+    mean_measure = 0.0
+    std_measure = 0.0
+    corr_measure = 0.0
+    csim_ld = measure(X_transformed, sim_dist_method=sim_dist_method)
+    if sim_dist_method == "KNN":
+        csim_hd_vec = vectorize_measure(csim_hd)
+        csim_ld_vec = vectorize_measure(csim_ld)
+        logical_int = np.logical_and(csim_hd_vec, csim_ld_vec)
+        corr_measure = sum(logical_int) / sum(csim_hd_vec) # proportion of neighbors retained
+    else:
+        # vectorize and correlate
+        csim_ld_vec = vectorize_measure(csim_ld)
+        mean_measure = np.mean(csim_ld_vec)
+        std_measure = np.std(csim_ld_vec)
+        csim_hd_vec = vectorize_measure(csim_hd)
+        corr_measure = np.corrcoef(csim_hd_vec, csim_ld_vec)[0,1]
+    return (X_transformed, mean_measure, std_measure, corr_measure)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
