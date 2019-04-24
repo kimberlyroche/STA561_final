@@ -23,7 +23,7 @@ def report_embedding(X_train, y_train, X_test, y_test, n_components, csim_hd, em
         print("    Std dev of low-dim similarities/distances: " + str(round(std_measure, round_tol)))
     print("    Correlation of similarities/distances: " + str(round(corr_measure, round_tol)))
 
-(X_train, y_train, X_test, y_test) = load_mnist(subsample_no=2000)
+(X_train, y_train, X_test, y_test) = load_mnist(subsample_no=0)
 
 print("Original dimensionality is: " + str(X_train.shape[1]))
 

@@ -118,6 +118,54 @@ def load_mnist(subsample_no=0):
     # X_test = X_test - colMeans
     return X_train, y_train, X_test, y_test
 
+def unpickle(file):
+    import pickle
+    with open(file, 'rb') as fo:
+        dict = pickle.load(fo, encoding='bytes')
+    return dict
+
+def load_cifar10(subsample_no=0):
+    # load the data
+    batch1_file = "data/cifar-10/data_batch_1"
+    batch1_data = unpickle(batch1_file)
+
+    X = np.array(batch1_data[b'data'])
+    y = np.array(batch1_data[b'labels'])
+    y = y.reshape(-1, 1)
+
+    X = X.astype('float32') / 255.
+    y = y.astype('float32')
+
+    if subsample_no > 0:
+        index_list = list(range(0,X.shape[0]))
+        random.shuffle(index_list)
+        index_list_samples = index_list[0:subsample_no]
+        X = X[index_list_samples]
+        y = y[index_list_samples]
+
+    # one-hot encode outcomes
+    onehot_encoder = OneHotEncoder(sparse=False)
+    y = onehot_encoder.fit_transform(y)
+
+    # we'll use two different input shapes for the GP and the CNN
+    # GP: subsample feature indices to test (GP only)
+    no_features = X.shape[1]
+    index_list = list(range(0,no_features))
+    random.shuffle(index_list)
+    subset_features = 10
+    index_list_features = index_list[0:subset_features]
+    X_GP = X[:,index_list_features]
+
+    print("X_GP has dimensions: " + str(X_GP.shape))
+
+    # CNN
+    X_CNN = X.reshape(X.shape[0], 32, 32, 3)
+    print("X_CNN has dimensions: " + str(X_CNN.shape))
+
+    print("y has dimension: " + str(y.shape))
+
+    return (X_GP, X_CNN, y)
+
 # dead-simple convolutional architecture for the simple 3 x 1 regression problem
 def regression_model():
     input_img = Input(shape=(3, 1, 1))
@@ -307,7 +355,42 @@ def embed_and_correlate(X_train, y_train, X_test, y_test, n_components, csim_hd,
         corr_measure = np.corrcoef(csim_hd_vec, csim_ld_vec)[0,1]
     return (X_transformed, mean_measure, std_measure, corr_measure)
 
+# simple misclassification proportion as loss
+def one_hot_loss(actual, predicted):
+    label_actual = -1
+    for i in range(len(actual)):
+        if actual[i] > 0:
+            label_actual = i
+    label_predicted = -1
+    max_value = -np.inf
+    for i in range(len(predicted)):
+        if predicted[i] > max_value:
+            max_value = predicted[i]
+            label_predicted = i
+    if label_actual == label_predicted:
+        return 0
+    else:
+        return 1
 
+# CNN setup
+# this approach follows: https://machinelearningmastery.com/regression-tutorial-keras-deep-learning-library-python/
+def classification_model():
+    input_img = Input(shape=(32, 32, 3)) # eventually hard-code this
+    x = Conv2D(32, kernel_size=(5, 5), strides=(1, 1), activation='relu')(input_img)
+    x = MaxPooling2D(pool_size=(2, 2), strides=(2, 2))(x)
+    x = Conv2D(64, (5, 5), activation='relu')(x)
+    x = MaxPooling2D(pool_size=(2, 2))(x)
+    x = Flatten()(x)
+    x = Dense(1000, activation='relu')(x)
+    x = Dense(10, activation='softmax')(x)
+    model = Model(input_img, x)
+    model.compile(optimizer='adam', loss='categorical_crossentropy')
+    return model    
+
+def predict_CNN_classification(X_train, y_train, X_test, batch_size=10):
+    cnn = KerasRegressor(build_fn=classification_model, epochs=1, batch_size=batch_size, verbose=0)
+    cnn.fit(x=X_train, y=y_train)
+    return cnn.predict(X_test)
 
 
 
