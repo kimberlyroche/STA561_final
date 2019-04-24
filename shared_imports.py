@@ -387,8 +387,8 @@ def classification_model():
     model.compile(optimizer='adam', loss='categorical_crossentropy')
     return model    
 
-def predict_CNN_classification(X_train, y_train, X_test, batch_size=10):
-    cnn = KerasRegressor(build_fn=classification_model, epochs=1, batch_size=batch_size, verbose=0)
+def predict_CNN_classification(X_train, y_train, X_test, batch_size=10, epochs=epochs):
+    cnn = KerasRegressor(build_fn=classification_model, epochs=epochs, batch_size=batch_size, verbose=0)
     cnn.fit(x=X_train, y=y_train)
     return cnn.predict(X_test)
 

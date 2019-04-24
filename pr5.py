@@ -1,6 +1,10 @@
 from shared_imports import *
 
-(X_GP, X_CNN, y) = load_cifar10(subsample_no=100)
+subsample_no = 100
+batch_size = 10
+epochs = 10
+
+(X_GP, X_CNN, y) = load_cifar10(subsample_no=subsample_no)
 
 no_samples = X_GP.shape[0]
 
@@ -24,7 +28,7 @@ for train_index, test_index in loo.split(X_GP):
     #error_GP += one_hot_loss(y_test[0], y_pred[0])
     X_train, X_test = X_CNN[train_index], X_CNN[test_index]
     start = time.time()
-    y_pred = predict_CNN_classification(X_train, y_train, X_test, batch_size=10)
+    y_pred = predict_CNN_classification(X_train, y_train, X_test, batch_size=batch_size, epochs=epochs)
     end = time.time()
     time_CNN += end - start
     error_CNN += one_hot_loss(y_test[0], y_pred.tolist())

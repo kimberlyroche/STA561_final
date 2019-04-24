@@ -1,5 +1,8 @@
 from shared_imports import *
 
+subsample_no = 1000
+epochs = 10
+
 # get similarity measure from user
 sim_dist_method = "cosine"
 if(len(sys.argv) > 1):
@@ -17,13 +20,14 @@ if(len(sys.argv) > 1):
 # space
 def report_embedding(X_train, y_train, X_test, y_test, n_components, csim_hd, embed_method, sim_dist_method):
     print("  Embedding dimension: " + str(n_components))
-    (X_transformed, mean_measure, std_measure, corr_measure) = embed_and_correlate(X_train, y_train, X_test, y_test, n_components, csim_hd, embed_method=embed_method, sim_dist_method=sim_dist_method, epochs=2)
+    (X_transformed, mean_measure, std_measure, corr_measure) = embed_and_correlate(X_train, y_train, X_test, \
+        y_test, n_components, csim_hd, embed_method=embed_method, sim_dist_method=sim_dist_method, epochs=epochs)
     if sim_dist_method != "KNN":
         print("    Mean of low-dim similarities/distances: " + str(round(mean_measure, round_tol)))
         print("    Std dev of low-dim similarities/distances: " + str(round(std_measure, round_tol)))
     print("    Correlation of similarities/distances: " + str(round(corr_measure, round_tol)))
 
-(X_train, y_train, X_test, y_test) = load_mnist(subsample_no=0)
+(X_train, y_train, X_test, y_test) = load_mnist(subsample_no=subsample_no)
 
 print("Original dimensionality is: " + str(X_train.shape[1]))
 
@@ -35,6 +39,7 @@ csim_hd = measure(X_train, sim_dist_method=sim_dist_method)
 
 # in practice this is super difficult to parse!
 component_sweep = [784, 400, 200, 100, 50, 10, 3]
+component_sweep = [3]
 
 for embed_method in ["PCA", "Laplacian eigenmaps", "VAE"]:
     print("Embedding method: " + embed_method)
@@ -67,7 +72,7 @@ ax.view_init(30, 60)
 plt.savefig("plots/Laplacian_eigenmaps_embedding.png")
 
 # plot the 3D embedding (VAE)
-X_transformed = embed(X_train, y_train, X_test, y_test, 3, embed_method="VAE", epochs=2)
+X_transformed = embed(X_train, y_train, X_test, y_test, 3, embed_method="VAE", epochs=epochs)
 df = pd.DataFrame({'X': X_transformed[:,0], 'Y': X_transformed[:,1], 'Z': X_transformed[:,2], 'label': y_train })
 
 fig = plt.figure(figsize=(12,12))
