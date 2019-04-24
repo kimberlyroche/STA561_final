@@ -7,7 +7,7 @@ from shared_imports import *
 # may want to try non-linear kernel
 
 subsample_no = 200
-batch_size = int(subsample_no / 20.)
+batch_size = 128
 epochs = 10
 
 (X, y) = load_lab1_data(subsample_no=subsample_no)

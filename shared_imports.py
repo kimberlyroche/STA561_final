@@ -3,6 +3,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 
 # suppress tensorflow info/warnings
+import sys
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
@@ -36,7 +37,7 @@ from keras.models import Model
 from keras.layers import Input
 from keras.layers import Layer, Dense, Conv2D, Conv2DTranspose, MaxPooling2D, Flatten, Activation, Lambda, Reshape
 from keras.layers.advanced_activations import LeakyReLU
-from keras.losses import mse, categorical_crossentropy
+from keras.losses import mse, binary_crossentropy, categorical_crossentropy
 
 # for spectral embedding
 from keras.datasets import mnist, cifar100, fashion_mnist
@@ -109,10 +110,12 @@ def load_mnist(subsample_no=0):
         X_test = X_test[index_list]
         y_test = y_test[index_list]
 
-    # center the data; this seems appropriate for cosine angle, probably doesn't
-    # hurt for other measure
-    colMeans = X_train.mean(axis=0)
-    X_train = X_train - colMeans
+    # in some cases might make sense to center
+    # omitting here
+    # colMeans = X_train.mean(axis=0)
+    # X_train = X_train - colMeans
+    # colMeans = X_test.mean(axis=0)
+    # X_test = X_test - colMeans
     return X_train, y_train, X_test, y_test
 
 # dead-simple convolutional architecture for the simple 3 x 1 regression problem
@@ -169,22 +172,123 @@ def measure(X, sim_dist_method="cosine"):
         csim = cosine_similarity(X)
     return csim
 
+# sample from MVN given a mean and log standard deviation
+def sampling(args):
+    z_mu, z_log_sigma = args
+    latent_dim = z_mu.shape[1]
+    # sample white noise
+    epsilon = K.random_normal(shape=(K.shape(z_mu)[0], latent_dim), mean=0., stddev=1.)
+    return z_mu + K.exp(z_log_sigma) * epsilon
+
+# most of code from: https://keras.io/examples/variational_autoencoder/
+def vae_embed(X_train, y_train, X_test, y_test, latent_dim=3, epochs=10, verbose=0):
+    # hard-coding this
+    image_size = 28
+    original_dim = image_size * image_size
+    input_shape = (original_dim, )
+    intermediate_dim = 512
+    batch_size = 128
+
+    # build encoder model
+    inputs = Input(shape=input_shape, name='encoder_input')
+    x = Dense(intermediate_dim, activation='relu')(inputs)
+    z_mean = Dense(latent_dim, name='z_mean')(x)
+    z_log_var = Dense(latent_dim, name='z_log_var')(x)
+
+    # define a sample vector from the latent distribution
+    # this will be the input into the decoder!
+    z = Lambda(sampling, output_shape=(latent_dim,), name='z')([z_mean, z_log_var])
+
+    encoder = Model(inputs, [z_mean, z_log_var, z], name='encoder')
+
+    # build decoder model
+    latent_inputs = Input(shape=(latent_dim,), name='z_sampling')
+    x = Dense(intermediate_dim, activation='relu')(latent_inputs)
+    outputs = Dense(original_dim, activation='sigmoid')(x)
+
+    decoder = Model(latent_inputs, outputs, name='decoder')
+
+    # instantiate VAE model
+    outputs = decoder(encoder(inputs)[2])
+    vae = Model(inputs, outputs, name='vae_mlp')
+
+    reconstruction_loss = mse(inputs, outputs)
+
+    reconstruction_loss *= original_dim
+    kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
+    kl_loss = K.sum(kl_loss, axis=-1)
+    kl_loss *= -0.5
+    vae_loss = K.mean(reconstruction_loss + kl_loss)
+    vae.add_loss(vae_loss)
+    vae.compile(optimizer='adam')
+
+    vae.fit(X_train, epochs=epochs, batch_size=batch_size, validation_data=(X_test, None))
+
+    if verbose > 0 and latent_dim == 2:
+        # plot diagnostics
+        filename = "plots/vae_mean.png"
+        z_mean, _, _ = encoder.predict(X_test, batch_size=128)
+        plt.figure(figsize=(12, 10))
+        plt.scatter(z_mean[:, 0], z_mean[:, 1], c=y_test)
+        plt.colorbar()
+        plt.xlabel("z[0]")
+        plt.ylabel("z[1]")
+        plt.savefig(filename)
+
+        filename = "plots/latent_digits.png"
+        # display a 30x30 2D manifold of digits
+        n = 30
+        digit_size = 28
+        figure = np.zeros((digit_size * n, digit_size * n))
+        # linearly spaced coordinates corresponding to the 2D plot
+        # of digit classes in the latent space
+        grid_x = np.linspace(-4, 4, n)
+        grid_y = np.linspace(-4, 4, n)[::-1]
+
+        for i, yi in enumerate(grid_y):
+            for j, xi in enumerate(grid_x):
+                z_sample = np.array([[xi, yi]])
+                x_decoded = decoder.predict(z_sample)
+                digit = x_decoded[0].reshape(digit_size, digit_size)
+                figure[i * digit_size: (i + 1) * digit_size,
+                       j * digit_size: (j + 1) * digit_size] = digit
+
+        plt.figure(figsize=(10, 10))
+        start_range = digit_size // 2
+        end_range = n * digit_size + start_range + 1
+        pixel_range = np.arange(start_range, end_range, digit_size)
+        sample_range_x = np.round(grid_x, 1)
+        sample_range_y = np.round(grid_y, 1)
+        plt.xticks(pixel_range, sample_range_x)
+        plt.yticks(pixel_range, sample_range_y)
+        plt.xlabel("z[0]")
+        plt.ylabel("z[1]")
+        plt.imshow(figure, cmap='Greys_r')
+        plt.savefig(filename)
+
+    # we'll just need the latent space, so return encoder only
+    return encoder
+
 # perform an embedding of X
-def embed(X, n_components, embed_method="PCA"):
+def embed(X_train, y_train, X_test, y_test, n_components, embed_method="PCA", epochs=10):
     X_transformed = None
     if embed_method == "Laplacian eigenmaps":
         embedding = SpectralEmbedding(n_components=n_components)
-        X_transformed = embedding.fit_transform(X)
+        X_transformed = embedding.fit_transform(X_train)
+    elif embed_method == "VAE":
+        encoder = vae_embed(X_train, y_train, X_test, y_test, latent_dim=n_components, epochs=epochs)
+        X_transformed, _, _ = encoder.predict(X_train, batch_size=128)
+        print(X_transformed.shape)
     else:
         pca = decomposition.PCA(n_components=n_components)
-        pca.fit(X)
-        X_transformed = pca.transform(X)
+        pca.fit(X_train)
+        X_transformed = pca.transform(X_train)
     return X_transformed
 
 # wrapper to embed and get the vector of (off-diagonal) pairwise distances
 # here csim_hd is the similarity or distance matrix over the same samples in the HD space
-def embed_and_correlate(X, n_components, csim_hd, embed_method="PCA", sim_dist_method="cosine"):
-    X_transformed = embed(X, n_components, embed_method=embed_method)
+def embed_and_correlate(X_train, y_train, X_test, y_test, n_components, csim_hd, embed_method="PCA", sim_dist_method="cosine", epochs=10):
+    X_transformed = embed(X_train, y_train, X_test, y_test, n_components, embed_method=embed_method, epochs=epochs)
     csim_ld_vec = None
     mean_measure = 0.0
     std_measure = 0.0
@@ -204,52 +308,6 @@ def embed_and_correlate(X, n_components, csim_hd, embed_method="PCA", sim_dist_m
         corr_measure = np.corrcoef(csim_hd_vec, csim_ld_vec)[0,1]
     return (X_transformed, mean_measure, std_measure, corr_measure)
 
-# heavily borrowing architecture from: https://keras.io/examples/variational_autoencoder/
-# network parameters
-def vae_embed(X_train, X_test, latent_dim=3, epochs=10, verbose=1):
-    # we'll only use this with MNIST; hard-code the dimensions
-    original_dim = 28*28
-    input_shape = (original_dim, )
-    intermediate_dim = 12*12 # pretty arbitrary
-
-    # encoder; simple - no convolution, just dense layers
-    inputs = Input(shape=input_shape, name='encoder_input')
-    x = Dense(intermediate_dim, activation='relu')(inputs)
-    z_mean = Dense(latent_dim, name='z_mean')(x)
-    z_log_var = Dense(latent_dim, name='z_log_var')(x)
-
-    # define a sample vector from the latent distribution
-    # this will be the input into the decoder!
-    z = Lambda(sampling, output_shape=(latent_dim,), name='z')([z_mean, z_log_var])
-
-    encoder = Model(inputs, [z_mean, z_log_var, z], name='encoder')
-
-    # decoder
-    latent_inputs = Input(shape=(latent_dim,), name='z_sampling')
-    x = Dense(intermediate_dim, activation='relu')(latent_inputs)
-    outputs = Dense(original_dim, activation='sigmoid')(x)
-
-    decoder = Model(latent_inputs, outputs, name='decoder')
-
-    # instantiate VAE model
-    outputs = decoder(encoder(inputs)[2])
-    vae = Model(inputs, outputs, name='vae_mlp')
-    models = (encoder, decoder)
-
-    reconstruction_loss = mse(inputs, outputs)
-
-    reconstruction_loss *= original_dim
-    kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
-    kl_loss = K.sum(kl_loss, axis=-1)
-    kl_loss *= -0.5
-    vae_loss = K.mean(reconstruction_loss + kl_loss)
-    vae.add_loss(vae_loss)
-    vae.compile(optimizer='adam')
-
-    vae.fit(X_train, epochs=epochs, batch_size=128, validation_data=(X_test, None), verbose=verbose)
-    
-    # just return the fitted /encoder/, since all we want to do is predict
-    return encoder
 
 
 
