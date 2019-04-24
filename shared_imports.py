@@ -222,7 +222,7 @@ def vae_embed(X_train, y_train, X_test, y_test, latent_dim=3, epochs=10, verbose
     vae.add_loss(vae_loss)
     vae.compile(optimizer='adam')
 
-    vae.fit(X_train, epochs=epochs, batch_size=batch_size, validation_data=(X_test, None))
+    vae.fit(X_train, epochs=epochs, batch_size=batch_size, validation_data=(X_test, None), verbose=verbose)
 
     if verbose > 0 and latent_dim == 2:
         # plot diagnostics
@@ -278,7 +278,6 @@ def embed(X_train, y_train, X_test, y_test, n_components, embed_method="PCA", ep
     elif embed_method == "VAE":
         encoder = vae_embed(X_train, y_train, X_test, y_test, latent_dim=n_components, epochs=epochs)
         X_transformed, _, _ = encoder.predict(X_train, batch_size=128)
-        print(X_transformed.shape)
     else:
         pca = decomposition.PCA(n_components=n_components)
         pca.fit(X_train)

@@ -4,9 +4,9 @@ from shared_imports import *
 sim_dist_method = "cosine"
 if(len(sys.argv) > 1):
     if sys.argv[1] == "euclid":
-        sim_dist_method == "Euclidean distance"
+        sim_dist_method = "Euclidean distance"
     elif sys.argv[1] == "knn":
-        sim_dist_method == "KNN"
+        sim_dist_method = "KNN"
 
 # problem 2 part 1 - use a spectral embedding method (or two) to embed the MNIST data and evaluate
 #                    how well distances are preserved
@@ -36,8 +36,7 @@ csim_hd = measure(X_train, sim_dist_method=sim_dist_method)
 # in practice this is super difficult to parse!
 component_sweep = [784, 400, 200, 100, 50, 10, 3]
 
-#for embed_method in ["PCA", "Laplacian eigenmaps"]:
-for embed_method in ["VAE"]:
+for embed_method in ["PCA", "Laplacian eigenmaps", "VAE"]:
     print("Embedding method: " + embed_method)
     print("Similarity/distance: " + sim_dist_method)
     if sim_dist_method != "KNN":
@@ -47,7 +46,6 @@ for embed_method in ["VAE"]:
     for n_components in component_sweep:
         report_embedding(X_train, y_train, X_test, y_test, n_components, csim_hd, embed_method, sim_dist_method)
 
-'''
 # plot the 3D embedding (PCA)
 X_transformed = embed(X_train, y_train, X_test, y_test, 3, embed_method="PCA")
 df = pd.DataFrame({'X': X_transformed[:,0], 'Y': X_transformed[:,1], 'Z': X_transformed[:,2], 'label': y_train })
@@ -77,4 +75,3 @@ ax = fig.add_subplot(111, projection='3d')
 ax.scatter(df['X'], df['Y'], df['Z'], c=df['label'], cmap='viridis', s=20)
 ax.view_init(30, 60)
 plt.savefig("plots/VAE_embedding.png")
-'''
