@@ -1,14 +1,20 @@
 from shared_imports import *
 
+# testing
+subsample_no = 50
+batch_size = 10
+epochs = 10
+
+# full
+subsample_no = 0
+batch_size = 10
+epochs = 100
+
 # problem 1 part 1 - compute LOO error for GP regression and CNN regression
 
 # note: should take about 15-20 minutes to perform LOO CV on both model
 # before doing a full run, updated epochs to 100+
 # may want to try non-linear kernel
-
-subsample_no = 200
-batch_size = 10
-epochs = 10
 
 (X, y) = load_lab1_data(subsample_no=subsample_no)
 
@@ -22,7 +28,8 @@ loo = LeaveOneOut()
 loo.get_n_splits(X)
 it = 1
 for train_index, test_index in loo.split(X):
-    print("Evaluating split #" + str(it))
+    if it % 50 == 0:
+        print("Evaluating split #" + str(it))
     it += 1
     # subset train & test
     X_train, X_test = X[train_index], X[test_index]
@@ -39,7 +46,6 @@ for train_index, test_index in loo.split(X):
     y_pred = predict_CNN_regression(X_train, y_train, X_test, batch_size=batch_size, epochs=epochs)
     end = time.time()
     time_CNN += end - start
-    print(time_CNN)
     err = (y_pred - y_test[0,0])**2
     SSE_CNN += err
 

@@ -1,3 +1,12 @@
+Required for install:
+
+	conda create -n sta561_final python=3.6 anaconda
+	source activate sta561_final
+	conda install tensorflow
+	conda install keras
+
+	Keras 2.0.4 installed (code written for 2.2.4); required a couple of fixes noted in shared_imports.py
+
 PR1
 
 subsample_no = 200

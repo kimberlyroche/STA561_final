@@ -16,6 +16,7 @@ import pandas as pd
 import random
 from matplotlib import pyplot as plt
 # %matplotlib inline # for Jupyter
+plt.switch_backend('agg') # for HARDAC
 from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
 import pickle
@@ -40,7 +41,7 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.losses import mse, binary_crossentropy, categorical_crossentropy
 
 # for spectral embedding
-from keras.datasets import mnist, cifar100, fashion_mnist
+from keras.datasets import mnist
 from sklearn.manifold import SpectralEmbedding
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances, manhattan_distances, rbf_kernel
 from sklearn import decomposition
@@ -223,7 +224,7 @@ def measure(X, sim_dist_method="cosine"):
 # sample from MVN given a mean and log standard deviation
 def sampling(args):
     z_mu, z_log_sigma = args
-    latent_dim = z_mu.shape[1]
+    latent_dim = K.shape(z_mu)[1] # changed from reference to suit Keras 2.0.4
     # sample white noise
     epsilon = K.random_normal(shape=(K.shape(z_mu)[0], latent_dim), mean=0., stddev=1.)
     return z_mu + K.exp(z_log_sigma) * epsilon
@@ -261,14 +262,13 @@ def vae_embed(X_train, y_train, X_test, y_test, latent_dim=3, epochs=10, verbose
     vae = Model(inputs, outputs, name='vae_mlp')
 
     reconstruction_loss = mse(inputs, outputs)
-
     reconstruction_loss *= original_dim
     kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
     kl_loss = K.sum(kl_loss, axis=-1)
     kl_loss *= -0.5
     vae_loss = K.mean(reconstruction_loss + kl_loss)
     vae.add_loss(vae_loss)
-    vae.compile(optimizer='adam')
+    vae.compile(optimizer='adam', loss='') # added second (empty) param for Keras 2.0.4
 
     vae.fit(X_train, epochs=epochs, batch_size=batch_size, validation_data=(X_test, None), verbose=verbose)
 
@@ -387,7 +387,7 @@ def classification_model():
     model.compile(optimizer='adam', loss='categorical_crossentropy')
     return model    
 
-def predict_CNN_classification(X_train, y_train, X_test, batch_size=10, epochs=epochs):
+def predict_CNN_classification(X_train, y_train, X_test, batch_size=10, epochs=10):
     cnn = KerasRegressor(build_fn=classification_model, epochs=epochs, batch_size=batch_size, verbose=0)
     cnn.fit(x=X_train, y=y_train)
     return cnn.predict(X_test)

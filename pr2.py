@@ -1,7 +1,12 @@
 from shared_imports import *
 
+# testing
 subsample_no = 1000
 epochs = 10
+
+# full
+subsample_no = 0
+epochs = 100
 
 # get similarity measure from user
 sim_dist_method = "cosine"
@@ -39,7 +44,6 @@ csim_hd = measure(X_train, sim_dist_method=sim_dist_method)
 
 # in practice this is super difficult to parse!
 component_sweep = [784, 400, 200, 100, 50, 10, 3]
-component_sweep = [3]
 
 for embed_method in ["PCA", "Laplacian eigenmaps", "VAE"]:
     print("Embedding method: " + embed_method)
