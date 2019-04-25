@@ -1,9 +1,9 @@
 from shared_imports import *
 
 # testing
-subsample_no = 50
-batch_size = 10
-epochs = 10
+#subsample_no = 50
+#batch_size = 10
+#epochs = 10
 
 # full
 subsample_no = 0

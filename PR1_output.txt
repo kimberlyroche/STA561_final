@@ -1,0 +1,21 @@
+Using TensorFlow backend.
+Evaluating split #50
+Evaluating split #100
+Evaluating split #150
+Evaluating split #200
+RMSE (GP): 0.067613
+Average runtime (GP): 1.68729 sec
+RMSE (CNN): 0.106749
+Average runtime (CNN): 82.43278 sec
+True value for sample 1: 0.807087
+	Mean, std for GP: 0.744732, 0.067214
+	Prediction from CNN: 0.795419
+True value for sample 50: 0.318898
+	Mean, std for GP: 0.256467, 0.066845
+	Prediction from CNN: 0.262567
+True value for sample 100: 0.614173
+	Mean, std for GP: 0.604147, 0.066973
+	Prediction from CNN: 0.606734
+True value for sample 150: 0.334646
+	Mean, std for GP: 0.322501, 0.066971
+	Prediction from CNN: 0.336501
