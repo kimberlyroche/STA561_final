@@ -1,0 +1,51 @@
+Using TensorFlow backend.
+Original dimensionality is: 784
+Embedding method: PCA
+Similarity/distance: KNN
+  Embedding dimension: 784
+    Correlation of similarities/distances: 1.0
+  Embedding dimension: 400
+    Correlation of similarities/distances: 0.998421
+  Embedding dimension: 200
+    Correlation of similarities/distances: 0.97677
+  Embedding dimension: 100
+    Correlation of similarities/distances: 0.931439
+  Embedding dimension: 50
+    Correlation of similarities/distances: 0.854308
+  Embedding dimension: 10
+    Correlation of similarities/distances: 0.554578
+  Embedding dimension: 3
+    Correlation of similarities/distances: 0.190798
+Embedding method: Laplacian eigenmaps
+Similarity/distance: KNN
+  Embedding dimension: 784
+    Correlation of similarities/distances: 0.007668
+  Embedding dimension: 400
+    Correlation of similarities/distances: 0.039468
+  Embedding dimension: 200
+    Correlation of similarities/distances: 0.218539
+  Embedding dimension: 100
+    Correlation of similarities/distances: 0.515562
+  Embedding dimension: 50
+    Correlation of similarities/distances: 0.608029
+  Embedding dimension: 10
+    Correlation of similarities/distances: 0.39558
+  Embedding dimension: 3
+    Correlation of similarities/distances: 0.208615
+Embedding method: VAE
+Similarity/distance: KNN
+  Embedding dimension: 784
+    Correlation of similarities/distances: 0.535408
+  Embedding dimension: 400
+    Correlation of similarities/distances: 0.578935
+  Embedding dimension: 200
+    Correlation of similarities/distances: 0.632612
+  Embedding dimension: 100
+    Correlation of similarities/distances: 0.656067
+  Embedding dimension: 50
+    Correlation of similarities/distances: 0.687641
+  Embedding dimension: 10
+    Correlation of similarities/distances: 0.581191
+  Embedding dimension: 3
+    Correlation of similarities/distances: 0.284619
+

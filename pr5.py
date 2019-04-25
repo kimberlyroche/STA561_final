@@ -6,13 +6,15 @@ from shared_imports import *
 #epochs = 10
 
 # full
-subsample_no = 5000
+subsample_no = 1000 # prev job running at 5K
 batch_size = 128
 epochs = 100
 
 (X_GP, X_CNN, y) = load_cifar10(subsample_no=subsample_no)
 
 no_samples = X_GP.shape[0]
+
+print("Subsampling to " + str(subsample_no))
 
 error_GP = 0.0 # sum of misclassifications (GP)
 error_CNN = 0.0 # sum of misclassifications (CNN)
