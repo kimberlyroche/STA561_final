@@ -1,0 +1,99 @@
+Using TensorFlow backend.
+Original dimensionality is: 784
+Embedding method: PCA
+Similarity/distance: cosine
+  Mean of high-dim similarity/distance: 0.398751
+  Std dev of high-dim similarity/distance: 0.127737
+  Embedding dimension: 784
+    Mean of low-dim similarities/distances: 0.000327
+    Std dev of low-dim similarities/distances: 0.178203
+    Correlation of similarities/distances: 0.766686
+  Embedding dimension: 400
+    Mean of low-dim similarities/distances: 0.000329
+    Std dev of low-dim similarities/distances: 0.178483
+    Correlation of similarities/distances: 0.766683
+  Embedding dimension: 200
+    Mean of low-dim similarities/distances: 0.000377
+    Std dev of low-dim similarities/distances: 0.182618
+    Correlation of similarities/distances: 0.766549
+  Embedding dimension: 100
+    Mean of low-dim similarities/distances: 0.000512
+    Std dev of low-dim similarities/distances: 0.192395
+    Correlation of similarities/distances: 0.765114
+  Embedding dimension: 50
+    Mean of low-dim similarities/distances: 0.00082
+    Std dev of low-dim similarities/distances: 0.212213
+    Correlation of similarities/distances: 0.759955
+  Embedding dimension: 10
+    Mean of low-dim similarities/distances: 0.002828
+    Std dev of low-dim similarities/distances: 0.340842
+    Correlation of similarities/distances: 0.685697
+  Embedding dimension: 3
+    Mean of low-dim similarities/distances: 0.00471
+    Std dev of low-dim similarities/distances: 0.578892
+    Correlation of similarities/distances: 0.510243
+Embedding method: Laplacian eigenmaps
+Similarity/distance: cosine
+  Mean of high-dim similarity/distance: 0.398751
+  Std dev of high-dim similarity/distance: 0.127737
+  Embedding dimension: 784
+    Mean of low-dim similarities/distances: -0.000965
+    Std dev of low-dim similarities/distances: 0.016793
+    Correlation of similarities/distances: 0.062741
+  Embedding dimension: 400
+    Mean of low-dim similarities/distances: -0.000952
+    Std dev of low-dim similarities/distances: 0.038804
+    Correlation of similarities/distances: 0.145165
+  Embedding dimension: 200
+    Mean of low-dim similarities/distances: -0.000924
+    Std dev of low-dim similarities/distances: 0.064391
+    Correlation of similarities/distances: 0.251823
+  Embedding dimension: 100
+    Mean of low-dim similarities/distances: -0.000789
+    Std dev of low-dim similarities/distances: 0.097999
+    Correlation of similarities/distances: 0.374591
+  Embedding dimension: 50
+    Mean of low-dim similarities/distances: -0.000788
+    Std dev of low-dim similarities/distances: 0.141444
+    Correlation of similarities/distances: 0.461011
+  Embedding dimension: 10
+    Mean of low-dim similarities/distances: -0.000609
+    Std dev of low-dim similarities/distances: 0.318853
+    Correlation of similarities/distances: 0.592287
+  Embedding dimension: 3
+    Mean of low-dim similarities/distances: 0.001732
+    Std dev of low-dim similarities/distances: 0.583169
+    Correlation of similarities/distances: 0.488569
+Embedding method: VAE
+Similarity/distance: cosine
+  Mean of high-dim similarity/distance: 0.398751
+  Std dev of high-dim similarity/distance: 0.127737
+  Embedding dimension: 784
+    Mean of low-dim similarities/distances: 0.005046
+    Std dev of low-dim similarities/distances: 0.338732
+    Correlation of similarities/distances: 0.715246
+  Embedding dimension: 400
+    Mean of low-dim similarities/distances: 0.003028
+    Std dev of low-dim similarities/distances: 0.326482
+    Correlation of similarities/distances: 0.68692
+  Embedding dimension: 200
+    Mean of low-dim similarities/distances: 0.001834
+    Std dev of low-dim similarities/distances: 0.297011
+    Correlation of similarities/distances: 0.721705
+  Embedding dimension: 100
+    Mean of low-dim similarities/distances: 0.007776
+    Std dev of low-dim similarities/distances: 0.269216
+    Correlation of similarities/distances: 0.715873
+  Embedding dimension: 50
+    Mean of low-dim similarities/distances: 0.00389
+    Std dev of low-dim similarities/distances: 0.249866
+    Correlation of similarities/distances: 0.703131
+  Embedding dimension: 10
+    Mean of low-dim similarities/distances: 0.003773
+    Std dev of low-dim similarities/distances: 0.328436
+    Correlation of similarities/distances: 0.672239
+  Embedding dimension: 3
+    Mean of low-dim similarities/distances: 0.006102
+    Std dev of low-dim similarities/distances: 0.579054
+    Correlation of similarities/distances: 0.482436
+
