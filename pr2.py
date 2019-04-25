@@ -1,11 +1,6 @@
 from shared_imports import *
 
-# testing
-#subsample_no = 1000
-#epochs = 10
-
-# full
-subsample_no = 20000
+subsample_no = 1000
 epochs = 100
 
 # get similarity measure from user
