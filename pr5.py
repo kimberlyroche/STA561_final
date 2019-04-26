@@ -1,17 +1,12 @@
 from shared_imports import *
 
-# testing
-subsample_no = 5000
-batch_size = 10
-epochs = 100
-
-# full
-#subsample_no = 5000
-#batch_size = 128
-#epochs = 100
+# last edited for CNN
+subsample_no = 2000
+batch_size = 128
+epochs = 20
 
 # get similarity measure from user
-method = "cnn"
+method = "CNN"
 if(len(sys.argv) > 1):
     if sys.argv[1] == "gpr":
         method = "GPR"
